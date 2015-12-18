@@ -4,11 +4,6 @@ function pr(msg) {
     console.log(msg);
 }
 
-function print(msg) {
-    console.log(msg);
-}
-
-//to general utils
 function getClientTime(){
     var totalSec = new Date().getTime() / 1000;
     var d = new Date();

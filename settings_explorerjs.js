@@ -10,7 +10,24 @@ var minimap=false;
 var getAdditionalInfo=false;//for topPapers div
 
 
-var mainfile=false;
+var mainfile = ["db.json"];
+// // var mainfile = "api.json";
+// var mainfile = [
+//     "data/2-Terms-Authors-300nodes.gexf",
+//     "data/0-terms-terms-MainNodes.gexf",
+//     "data/maziyar2.json",
+//     "data/3-Terms-Countries-300nodes.gexf",
+// //     "data/noclimatechange_mnodes.gexf",
+//     "data/20150518t1052_phylograph.json",
+// //     "data/phylograph_6.json",
+// //     "data/maziyar.json",
+// //     "data/20141128_GPs_03_bi.gexf",
+// //     "data/example.json",
+// //     "data/Elisa__Omodei.gexf",
+//     ];
+var APINAME = "LOCALDB/"
+
+
 // getUrlParam.file = "data/testgraph.json";
 
 var dataFolderTree = {};
@@ -25,19 +42,19 @@ bridge["forNormalQuery"] = external+"php/bridgeClientServer.php";
 
 
 var gexfDict={};
-gexfDict["data/terrorism/terrorism_mono.gexf"] = "[2001-2014] TERRORISM (1-partite graph)";
-gexfDict["data/terrorism/terrorism_bi.gexf"] = "[2001-2014] TERRORISM (2-partite graph)";
+// gexfDict["data/terrorism/terrorism_mono.gexf"] = "[2001-2014] TERRORISM (1-partite graph)";
+// gexfDict["data/terrorism/terrorism_bi.gexf"] = "[2001-2014] TERRORISM (2-partite graph)";
 
 var field = {}
-field["data/20141128_GPs_03_bi.gexf"] = "ISItermsfirstindexing";
-field["data/20141215_GPs_04.gexf"] = "ISItermsfirstindexing";
-field["data/medq2/20141128_MED_02_bi.gexf"] = "ISItermsBigWL";
-field["data/medq2/20141128_MED_03_bi.gexf"] = "ISItermsBigWL";
-field["data/medq2/20141208_MED_Author_name-ISItermsjulien_index.gexf"] = "ISItermsjulien_index";
-field["data/medq1/20141208_MED_01_bi.gexf"] = "ISItermsfirstindex";
+// field["data/20141128_GPs_03_bi.gexf"] = "ISItermsfirstindexing";
+// field["data/20141215_GPs_04.gexf"] = "ISItermsfirstindexing";
+// field["data/medq2/20141128_MED_02_bi.gexf"] = "ISItermsBigWL";
+// field["data/medq2/20141128_MED_03_bi.gexf"] = "ISItermsBigWL";
+// field["data/medq2/20141208_MED_Author_name-ISItermsjulien_index.gexf"] = "ISItermsjulien_index";
+// field["data/medq1/20141208_MED_01_bi.gexf"] = "ISItermsfirstindex";
 
-field["data/terrorism/terrorism_mono.gexf"] = "ISItermsListV1";
-field["data/terrorism/terrorism_bi.gexf"] = "ISItermsListV1";
+// field["data/terrorism/terrorism_mono.gexf"] = "ISItermsListV1";
+// field["data/terrorism/terrorism_bi.gexf"] = "ISItermsListV1";
 
 var ParseCustom = function () {};
 var SigmaUtils = function () {};
@@ -180,6 +197,7 @@ var partialGraph;
 var otherGraph;
 var Nodes = []; 
 var Edges = [];
+var Clusters = [];
 
 var nodeslength=0;
 

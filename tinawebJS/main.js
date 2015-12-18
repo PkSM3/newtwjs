@@ -1,14 +1,3 @@
-function watch(obj, prop, handler) { // make this a framework/global function
-    var currval = obj[prop];
-    function callback() {
-        if (obj[prop] != currval) {
-            var temp = currval;
-            currval = obj[prop];
-            handler(temp, currval);
-        }
-    }
-    return callback;
-}
 
 // Function.prototype.index
 (function(reComments, reParams, reNames) {
@@ -55,29 +44,41 @@ var AjaxSync = (function(TYPE, URL, DATA, CT , DT) {
         });
     return Result;
 }).index();
+ 
+function getGexfPath(v){
+    gexfpath=(gexfDictReverse[v])?gexfDictReverse[v]:v;
+    return gexfpath;
+}
 
+function jsActionOnGexfSelector(gexfLegend){
+    if(getGexfPath[gexfLegend])
+        window.location=window.location.origin+window.location.pathname+"?file="+encodeURIComponent(getGexfPath(gexfLegend));
+    else
+        window.location=window.location.origin+window.location.pathname+"?file="+encodeURIComponent( gexfLegend );
+}
 
-var mainfile = "db.json";
-var mainfile = "api.json";
-var mainfile = [
-    "data/2-Terms-Authors-300nodes.gexf",
-    "data/0-terms-terms-MainNodes.gexf",
-    "data/maziyar2.json",
-    "data/3-Terms-Countries-300nodes.gexf",
-    "data/noclimatechange_mnodes.gexf",
-    "data/20150518t1052_phylograph.json",
-    "data/phylograph_6.json",
-    "data/maziyar.json",
-    "data/20141128_GPs_03_bi.gexf",
-    "data/example.json",
-    "data/Elisa__Omodei.gexf",
-    ];
 
 var urlfile_override = (isUndef(getUrlParam.file))?false:true;
-if(urlfile_override) mainfile.unshift( getUrlParam.file );
+
+var files_selector = ""
+if(urlfile_override) 
+    mainfile.unshift( getUrlParam.file );
+
+unique_mainfile = mainfile.filter(function(item, pos) {
+    return mainfile.indexOf(item) == pos;
+});
+mainfile = unique_mainfile;
 
 console.log("THE URL.FILE PARAM:")
 console.log(mainfile)
+
+files_selector += '<select onchange="jsActionOnGexfSelector(this.value);">'
+for(var i in mainfile) {
+    var gotoURL = window.location.origin+window.location.pathname+"?file="+mainfile[i];
+    files_selector += '<option>'+mainfile[i]+'</option>'
+}
+files_selector += "</select>"
+$("#network").html(files_selector)
 
 var file = (Array.isArray(mainfile))?mainfile[0]:mainfile;
 
@@ -86,19 +87,62 @@ var RES = AjaxSync({ URL: file });
 if(RES["OK"]) {
 
     var fileparam;// = { db|api.json , somefile.json|gexf }
-    if(file=="db.json" || file=="api.json") fileparam = file;
-    else  fileparam = RES["format"];
+    var the_data = RES["data"];
+    
+    if(file=="db.json") {
 
-    start = new ParseCustom(  fileparam , RES["data"] );
+        getAdditionalInfo = true;
+
+        fileparam = file;
+
+        for( var path in the_data ) {
+            pr("\t"+path+" has:")
+            pr(the_data[path])
+            var the_gexfs = the_data[path]["gexfs"]
+            pr("\t\tThese are the available  Gexfs:")
+            for(var gexf in the_gexfs) {
+                pr("\t\t\t"+gexf)
+                pr("\t\t\t\t"+ the_gexfs[gexf]["semantic"]["table"] )
+                field[path+"/"+gexf] = the_gexfs[gexf]["semantic"]["table"]
+                gexfDict[path+"/"+gexf] = "A "+gexf
+                getUrlParam.file = path+"/"+gexf
+                break
+            }
+            break;
+        }
+
+        pr("\n============================\n")
+        pr(field)
+        pr(gexfDict)
+        var sub_RES = AjaxSync({ URL: getUrlParam.file });
+        the_data = sub_RES["data"]
+        fileparam = sub_RES["format"]
+        pr(the_data.length)
+        pr(fileparam)
+        pr("\n============================\n")
+    } 
+
+    if (file=="api.json") {
+        fileparam = file;
+    }
+
+    // Reading just a JSON|GEXF
+    if ( file!="db.json" && file!="api.json" )
+        fileparam = RES["format"];
+
+    
+    start = new ParseCustom(  fileparam , the_data );
     categories = start.scanFile(); //user should choose the order of categories
     pr("Categories: ")
     pr(categories)
+
     var possibleStates = makeSystemStates( categories )
     var initialState = buildInitialState( categories ) //[true,false]//
 
     dicts = start.makeDicts(categories);
     Nodes = dicts.nodes;
     Edges = dicts.edges;
+    if (the_data.clusters) Clusters = the_data.clusters
 
     nodes1 = dicts.n1;//not used
     var catDict = dicts.catDict
@@ -116,12 +160,12 @@ if(RES["OK"]) {
     
     // [ Initiating Sigma-Canvas ]
     var twjs_ = new TinaWebJS('#sigma-example'); 
-    print( twjs_.AdjustSigmaCanvas() );
-    $( window ).resize(function() { print(twjs_.AdjustSigmaCanvas()) });
+    console.log( twjs_.AdjustSigmaCanvas() );
+    $( window ).resize(function() { console.log(twjs_.AdjustSigmaCanvas()) });
     // [ / Initiating Sigma-Canvas ]
 
-    print("categories: "+categories)
-    print("initial state: "+initialState)
+    console.log("categories: "+categories)
+    console.log("initial state: "+initialState)
 
     // [ Poblating the Sigma-Graph ]
     var sigma_utils = new SigmaUtils();
@@ -136,16 +180,12 @@ if(RES["OK"]) {
     partialGraph.states[1].categories = categories
     partialGraph.states[1].categoriesDict = catDict;
     partialGraph.states[1].type = initialState;
+    partialGraph.states[1].LouvainFait = false;
     // [ / Poblating the Sigma-Graph ]
-
-
-
-
-
 
     partialGraph.states[1].setState = (function( type , level , sels , oppos ) {
         var bistate=false, typestring=false;
-        print("IN THE SET STATE METHOD:")
+        console.log("IN THE SET STATE METHOD:")
         if(!isUndef(type)) {
             this.type = type;
             bistate= type.map(Number).reduce(function(a, b){return a+b;})
@@ -154,25 +194,26 @@ if(RES["OK"]) {
         if(!isUndef(level)) this.level = level;
         if(!isUndef(sels)) this.selections = sels;
         if(!isUndef(oppos)) this.opposites = oppos;
-        print("")
-        print(" % % % % % % % % % % ")
-        // print("type: "+thetype.map(Number));
-        print("bistate: "+bistate)
-        print("level: "+level);
-        print("selections: ");
-        print(sels)
-        print("selections2: ");
-        print(sels.length)
-        print("opposites: ");
-        print(oppos)
+        this.LouvainFait = false;
+        console.log("")
+        console.log(" % % % % % % % % % % ")
+        // console.log("type: "+thetype.map(Number));
+        console.log("bistate: "+bistate)
+        console.log("level: "+level);
+        console.log("selections: ");
+        console.log(sels)
+        console.log("selections2: ");
+        console.log(sels.length)
+        console.log("opposites: ");
+        console.log(oppos)
 
         var present = partialGraph.states.slice(-1)[0]; // Last
         var past = partialGraph.states.slice(-2)[0] // avant Last
-        print("previous level: "+past.level)
-        print("new level: "+present.level)
+        console.log("previous level: "+past.level)
+        console.log("new level: "+present.level)
         
-        print(" % % % % % % % % % % ")
-        print("")
+        console.log(" % % % % % % % % % % ")
+        console.log("")
 
         var bistate= this.type.map(Number).reduce(function(a, b){return a+b;})
         LevelButtonDisable(false);
@@ -182,20 +223,20 @@ if(RES["OK"]) {
         if(this.level==false && bistate>1)
             LevelButtonDisable(true)
 
-        // print("printing the first state:")
+        // console.log("printing the first state:")
         // first_state = partialGraph.states.slice(-1)[0].type;
         // for(var i in first_state) {
         //     if(first_state[i]) {
         //         for(var j in Filters[i])
-        //             print(j)
+        //             console.log(j)
         //     }
         // }
 
-        print("printing the typestring:")
-        print(typestring)
+        console.log("printing the typestring:")
+        console.log(typestring)
 
         if(typestring=="0|1") {
-            $("#category0").hide();
+            $("#category0").hide();set_ClustersLegend
             $("#category1").show();
 
             if($("#slidercat1nodesweight").html()=="") 
@@ -209,6 +250,7 @@ if(RES["OK"]) {
                 NodeWeightFilter( this.categories , "#slidercat1nodesweight" ,  this.categories[1],  "type" ,"size");
                 EdgeWeightFilter("#slidercat1edgesweight", "label" , "nodes2", "weight");
             }
+            set_ClustersLegend ( "clust_default" )
         }
 
         if(typestring=="1|0") {
@@ -225,6 +267,30 @@ if(RES["OK"]) {
                 NodeWeightFilter( this.categories , "#slidercat0nodesweight" ,  this.categories[0],  "type" ,"size");
                 EdgeWeightFilter("#slidercat0edgesweight", "label" , "nodes1", "weight");
             }
+            set_ClustersLegend ( "clust_default" )
+        } else {
+            
+        //finished
+        $("#slidercat1nodessize").freshslider({
+            step:1,
+            min:-20,
+            max:20,
+            value:0,
+            bgcolor:"#FFA500",
+            onchange:function(value){
+                $.doTimeout(100,function (){
+                       partialGraph.iterNodes(function (n) {
+                           if(Nodes[n.id].type==catSem) {
+                               var newval = parseFloat(Nodes[n.id].size) + parseFloat((value-1))*0.3
+                               n.size = (newval<1.0)?1:newval;
+                               sizeMult[catSem] = parseFloat(value-1)*0.3;
+                           }
+                       });
+                       partialGraph.draw();
+                });
+            }
+        }); 
+
         }
 
         if(typestring=="1|1") {
@@ -251,9 +317,22 @@ if(RES["OK"]) {
 
     twjs_.initListeners( categories , partialGraph);
 
+    if( categories.length==1 ) {
+        $("#changetype").hide();
+        $("#taboppos").remove();
+        $.doTimeout(500,function () {
+            $('.etabs a[href="#tabs2"]').trigger('click');
+        });
+    }
+
+    ChangeGraphAppearanceByAtt(true)
+
+    set_ClustersLegend ( "clust_default" )
+
 } else alert("error: "+RES["data"])
 
 
 console.log("finish")
+
 
 

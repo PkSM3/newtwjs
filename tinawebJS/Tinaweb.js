@@ -59,15 +59,15 @@ SelectionEngine = function() {
 
     this.SelectorEngine_part02 = (function( addvalue , clicktype , prevsels , currsels ) {
         
-        print("Add[]:")
-        print(addvalue)
-        print("clicktype:")
-        print(clicktype)
-        print("prevsels:")
-        print(prevsels)
-        print("currsels:")
-        print(currsels)
-        print(" - - - - - - ")
+        console.log("Add[]:")
+        console.log(addvalue)
+        console.log("clicktype:")
+        console.log(clicktype)
+        console.log("prevsels:")
+        console.log(prevsels)
+        console.log("currsels:")
+        console.log(currsels)
+        console.log(" - - - - - - ")
 
         var buffer = Object.keys(prevsels).map(Number).sort(this.sortNumber);
         var targeted = currsels.map(Number).sort(this.sortNumber);
@@ -184,6 +184,7 @@ SelectionEngine = function() {
         return targeted;
     }).index();
 
+    // uses: SelectorEngine() and MultipleSelection2()
     this.search = function(string) {
         var id_node = '';
         var results = find(string)
@@ -208,10 +209,12 @@ SelectionEngine = function() {
         $("input#searchinput").autocomplete( "close" );
     }
 
+    //Util
     this.sortNumber = function(a,b) {
         return a - b;
     }
 
+    //Util
     this.intersect_safe = function(a, b) {
         var ai=0, bi=0;
         var result = new Array();
@@ -228,6 +231,8 @@ SelectionEngine = function() {
         return result;
     }
 
+    // return Nodes-ids under the clicked Area
+    //  external usage : partialGraph
     this.SelectThis2 = function( area ) {
         var x1 = area.x1;
         var y1 = area.y1;
@@ -250,15 +255,18 @@ SelectionEngine = function() {
         return actualSel;
     }
 
+    //  external usage : partialGraph , updateLeftPanel_fix();
     this.MultipleSelection2 = (function(nodes,nodesDict,edgesDict) {
 
-        pr("IN SelectionEngine.MultipleSelection2:")
-        print(nodes)
+        console.log("IN SelectionEngine.MultipleSelection2:")
+        console.log(nodes)
         greyEverything(); 
 
 
         var typeNow = partialGraph.states.slice(-1)[0].type.map(Number).join("|")
-
+        console.log ("console.loging the Type:")
+        console.log (typeNow)
+        console.log (" - - - - - - ")
         // Dictionaries of: selection+neighbors
 
         var nodes_2_colour = (nodesDict)? nodesDict : {};
@@ -272,13 +280,15 @@ SelectionEngine = function() {
             else ndsids=nodes;
             for(var i in ndsids) {
                 s = ndsids[i];
-                neigh = Relations[typeNow][s]
-                if(neigh) {
-                    for(var j in neigh) {
-                        t = neigh[j]
-                        nodes_2_colour[t]=false;
-                        edges_2_colour[s+";"+t]=true;
-                        edges_2_colour[t+";"+s]=true;
+                if(Relations[typeNow] && Relations[typeNow][s] ) {
+                    neigh = Relations[typeNow][s]
+                    if(neigh) {
+                        for(var j in neigh) {
+                            t = neigh[j]
+                            nodes_2_colour[t]=false;
+                            edges_2_colour[s+";"+t]=true;
+                            edges_2_colour[t+";"+s]=true;
+                        }
                     }
                 }
             }
@@ -310,17 +320,36 @@ SelectionEngine = function() {
         }
 
 
-        var thenewsels = Object.keys(selections).map(Number)
-        partialGraph.states.slice(-1)[0].selections = thenewsels;
-        partialGraph.states.slice(-1)[0].setState( { sels: thenewsels} )
+        var the_new_sels = Object.keys(selections).map(Number)
+        partialGraph.states.slice(-1)[0].selections = the_new_sels;
+        partialGraph.states.slice(-1)[0].setState( { sels: the_new_sels} )
+
+        var neighsDict = {}
+        if(Relations["1|1"]) {
+            for(var s in the_new_sels) {
+                var neighs = Relations["1|1"][the_new_sels[s]];
+                for(var n in neighs) {
+                    if (!neighsDict[neighs[n]])
+                        neighsDict[neighs[n]] = 0;
+                    neighsDict[neighs[n]]++;
+                }
+            }    
+        } 
+
+        var oppos = ArraySortByValue(neighsDict, function(a,b){
+            return b-a
+        });
+
 
         overNodes=true; 
 
         partialGraph.draw();
 
-        updateLeftPanel_fix();
+        updateLeftPanel_fix( selections , oppos );
 
-        // RefreshState("")
+        for(var n in neighsDict) 
+            delete neighsDict[n]
+
     }).index()
 };
 
@@ -328,7 +357,7 @@ TinaWebJS = function ( sigmacanvas ) {
     this.sigmacanvas = sigmacanvas;
 
     this.init = function () {
-        print("hola mundo")
+        console.log("hola mundo")
     }
 
     this.getSigmaCanvas = function () {
@@ -358,9 +387,9 @@ TinaWebJS = function ( sigmacanvas ) {
 
         $('input#searchinput').autocomplete({
             source: function(request, response) {
-                print("in autocomplete:")
-                print(labels.length)
-                print(" - - - - - - - - - ")
+                console.log("in autocomplete:")
+                console.log(labels.length)
+                console.log(" - - - - - - - - - ")
                 matches = [];
                 var matcher = new RegExp($.ui.autocomplete.escapeRegex(request.term), "i");
                 var results = $.grep(labels, function(e) {
@@ -397,6 +426,7 @@ TinaWebJS = function ( sigmacanvas ) {
         });
         
         // i've a list of coincidences and i press enter like a boss >:D
+        //  external usage: partialGraph, SelectorEngine() , MultipleSelection2()
         $("#searchinput").keydown(function (e) {
             if (e.keyCode == 13 && $("input#searchinput").data('is_open') === true) {
                 // Search has several results and you pressed ENTER
@@ -433,11 +463,12 @@ TinaWebJS = function ( sigmacanvas ) {
         });
         
         // i was navigating (with the up|down) sur the coincidences-list and i pressed enter!
+        //  external usage: partialGraph, SelectorEngine() , MultipleSelection2()
         $("#searchinput").keyup(function (e) {
             if (e.keyCode == 13 && $("input#searchinput").data('is_open') !== true) {
                 var exfnd = exactfind( $("#searchinput").val() )
                 if (exfnd!=null) {
-                    pr("search KEY UP");
+                    console.log("search KEY UP");
                     $.doTimeout(30,function (){
 
                             var targeted = SelInst.SelectorEngine( {
@@ -460,6 +491,8 @@ TinaWebJS = function ( sigmacanvas ) {
         });
     }
 
+    //  external usage: SelectorEngine*() , MultipleSelection2() , 
+    //      enviroment.js:changeType()|changeLevel()|NodeWeightFilter()|EdgeWeightFilter
     this.initListeners = function (categories, partialGraph) {
         
         var SelInst = new SelectionEngine();
@@ -479,28 +512,28 @@ TinaWebJS = function ( sigmacanvas ) {
         });
 
         $("#changetype").click(function(){
-            pr("")
-            pr(" ############  changeTYPE click");
+            console.log("")
+            console.log(" ############  changeTYPE click");
             partialGraph.stopForceAtlas2();
             changeType();
 
             $.doTimeout(500,function (){
                 $('.etabs a[href="#tabs1"]').trigger('click');
             });
-
-            pr(" ############  / changeTYPE click");
-            pr("")
+            ChangeGraphAppearanceByAtt(true)
+            console.log(" ############  / changeTYPE click");
+            console.log("")
         });
 
         $("#changelevel").click(function(){
-            pr("")
-            pr(" ############  changeLEVEL click");
+            console.log("")
+            console.log(" ############  changeLEVEL click");
 
             changeLevel();
             // $("#tabs1").click()
-
-            pr(" ############  / changeLEVEL click");
-            pr("")
+            ChangeGraphAppearanceByAtt(true)
+            console.log(" ############  / changeLEVEL click");
+            console.log("")
         });
 
         //  ===  un/hide leftpanel  === //
@@ -551,8 +584,6 @@ TinaWebJS = function ( sigmacanvas ) {
             }   
         });
 
-        startMiniMap();
-
         pushSWClick("social");
 
         cancelSelection(false);
@@ -577,6 +608,9 @@ TinaWebJS = function ( sigmacanvas ) {
             // partialGraph.startForceAtlas2();
         });
 
+
+        // Double Click
+        //  external usage: SelectorEngine_part01() and SelectorEngine_part02()
         $('#sigma-example').dblclick(function(event) {// using SelectionEngine
             var area = {}
             area.x1 = partialGraph._core.mousecaptor.mouseX;
@@ -603,6 +637,8 @@ TinaWebJS = function ( sigmacanvas ) {
             trackMouse();
         });
 
+        // Simple Click
+        //  external usage: SelectorEngine()
         $("#sigma-example")
             .mousemove(function(){
                 if(!isUndef(partialGraph)) {
@@ -612,7 +648,6 @@ TinaWebJS = function ( sigmacanvas ) {
             .contextmenu(function(){
                 return false;
             })
-            .mousewheel(onGraphScroll)
             .mousedown(function(e) { // using SelectionEngine
                 //left click!<- normal click
                 if(e.which==1){
@@ -640,6 +675,8 @@ TinaWebJS = function ( sigmacanvas ) {
                 }
             });
 
+
+
         $("#zoomSlider").slider({
             orientation: "vertical",
             value: partialGraph.position().ratio,
@@ -648,10 +685,10 @@ TinaWebJS = function ( sigmacanvas ) {
             range: "min",
             step: 0.1,
             slide: function( event, ui ) {
-                // pr("*******lalala***********")
-                // pr(partialGraph.position().ratio)
-                // pr(sigmaJsMouseProperties.minRatio)
-                // pr(sigmaJsMouseProperties.maxRatio)
+                // console.log("*******lalala***********")
+                // console.log(partialGraph.position().ratio)
+                // console.log(sigmaJsMouseProperties.minRatio)
+                // console.log(sigmaJsMouseProperties.maxRatio)
                 partialGraph.zoomTo(
                     partialGraph._core.width / 2, 
                     partialGraph._core.height / 2, 
@@ -689,8 +726,7 @@ TinaWebJS = function ( sigmacanvas ) {
                 return;
             } 
         });
-
-
+        
         NodeWeightFilter ( categories , "#slidercat0nodesweight" ,  categories[0],  "type" ,"size");
 
         EdgeWeightFilter("#slidercat0edgesweight", "label" , "nodes1", "weight");
@@ -700,15 +736,16 @@ TinaWebJS = function ( sigmacanvas ) {
         //finished
         $("#slidercat0nodessize").freshslider({
             step:1,
-            min:1,
-            max:25,
-            value:1,
+            min:-20,
+            max:20,
+            value:0,
             bgcolor:"#27c470",
             onchange:function(value){
                 $.doTimeout(100,function (){
                        partialGraph.iterNodes(function (n) {
                            if(Nodes[n.id].type==catSoc) {
-                               n.size = parseFloat(Nodes[n.id].size) + parseFloat((value-1))*0.3;
+                               var newval = parseFloat(Nodes[n.id].size) + parseFloat((value-1))*0.3
+                               n.size = (newval<1.0)?1:newval;
                                sizeMult[catSoc] = parseFloat(value-1)*0.3;
                            }
                        });
@@ -720,15 +757,16 @@ TinaWebJS = function ( sigmacanvas ) {
         //finished
         $("#slidercat1nodessize").freshslider({
             step:1,
-            min:1,
-            max:25,
-            value:1,
+            min:-20,
+            max:20,
+            value:0,
             bgcolor:"#FFA500",
             onchange:function(value){
                 $.doTimeout(100,function (){
                        partialGraph.iterNodes(function (n) {
                            if(Nodes[n.id].type==catSem) {
-                               n.size = parseFloat(Nodes[n.id].size) + parseFloat((value-1))*0.3;
+                               var newval = parseFloat(Nodes[n.id].size) + parseFloat((value-1))*0.3
+                               n.size = (newval<1.0)?1:newval;
                                sizeMult[catSem] = parseFloat(value-1)*0.3;
                            }
                        });
@@ -737,7 +775,7 @@ TinaWebJS = function ( sigmacanvas ) {
             }
         }); 
 
-        //finished
+        //Cursor Size slider
         $("#unranged-value").freshslider({
             step: 1,
             min:cursor_size_min,
@@ -750,13 +788,6 @@ TinaWebJS = function ( sigmacanvas ) {
             }
         });
 
-        if( categories.length==1 ) {
-            $("#changetype").hide();
-            $("#taboppos").remove();
-            $.doTimeout(500,function () {
-                $('.etabs a[href="#tabs2"]').trigger('click');
-            });
-        }
     }
 
 };

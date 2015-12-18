@@ -43,7 +43,7 @@
 
             <li>
               <a>
-                <span id="network" class="label label-success"></span>
+                <span id="network" ></span>
               </a>
             </li>
             
@@ -118,7 +118,7 @@
                       
 
                   </ul>
-                  
+
                   <ul id="category0" class="nav navbar-nav navbar-right">
                     <li>
                       <ul style="list-style-type: none; margin:0em 1em;">
@@ -250,20 +250,18 @@
 	        </ul>
 	    </div>
 
-
 	    <!-- Sidebar -->
 	    <div id="leftcolumn">      
-            <div style="text-align: center;">
-                <a href="http://www.cnrs.fr" target="_blank"><img width="40%"  src="https://www.ipmc.cnrs.fr/~duprat/comm/images/logo_cnrs_transparent.gif"></a>
-            </div>
-            <button 
-                style="color: #900;font-weight: bold;font-size: 70%;text-transform: uppercase;float:right;" 
-                onClick='cancelSelection(false);'
-            >X</button>
+          <div style="text-align: center;">
+              <a href="http://www.cnrs.fr" target="_blank"><img width="40%"  src="https://www.ipmc.cnrs.fr/~duprat/comm/images/logo_cnrs_transparent.gif"></a>
+          </div>
+          <button 
+              style="color: #900;font-weight: bold;font-size: 70%;text-transform: uppercase;float:right;" 
+              onClick='cancelSelection(false);'
+          >X</button>
 
 	        <div id="tips"></div>
-	        <div id="names">
-          </div>
+	        <div id="names"></div>
 
 	        <br>
 	        <div id="tab-container" class='tab-container' style="display: none;">
@@ -290,6 +288,8 @@
 	    </div>
 
     </div>
+
+    <div id="legend_for_clusters"></div>
 
     <div id="savemodal" class="modal fade">
       <div class="modal-dialog">
@@ -405,7 +405,7 @@
     -->
     <!--<script src="geomap/js/countries_iso3166.js" charset="utf-8" ></script>-->
     
-    
+    <script type="text/javascript" type="text/javascript" src="tinawebJS/jLouvain.js"></script>
     <script src="tinawebJS/sigma.min.js" type="text/javascript" language="javascript"></script>
     <script src="tinawebJS/sigma.forceatlas2.js" type="text/javascript" language="javascript"></script>
     <script src="settings_explorerjs.js" type="text/javascript" language="javascript"></script>
@@ -413,10 +413,8 @@
     <script src="extras_explorerjs.js" type="text/javascript" language="javascript"></script>
     <script src="tinawebJS/sigmaUtils.js" type="text/javascript" language="javascript"></script>
     <script src="tinawebJS/methods.js" type="text/javascript" language="javascript"></script>
-    <script src="tinawebJS/minimap.js" type="text/javascript" language="javascript"></script>
     <script src="tinawebJS/enviroment.js" type="text/javascript" language="javascript"></script>
     <script src="tinawebJS/asyncFA2.js" type="text/javascript" language="javascript"></script>
-    <script src="tinawebJS/DataScanner.js" type="text/javascript" language="javascript"></script>
     <script src="tinawebJS/Tinaweb.js" type="text/javascript" language="javascript"></script>
     <script src="tinawebJS/main.js" type="text/javascript" language="javascript"></script>
         

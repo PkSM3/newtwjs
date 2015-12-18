@@ -7,21 +7,24 @@ SigmaUtils = function () {
     // input = GEXFstring
     this.FillGraph = function( initialState , catDict  , nodes, edges , graph ) {
 
-        print("Filling the graaaaph:")
-        print(catDict)
+        console.log("Filling the graaaaph:")
+        console.log(catDict)
         for(var i in nodes) {
             var n = nodes[i];
+            
             if(initialState[catDict[n.type]]) {
                 var node = ({
                     id : n.id,
                     label : n.label,
-                    shape : (n.shape) ? n.shape : "",
                     size : n.size,
                     color : n.color,
                     type : n.type,
                     x : n.x,
                     y : n.y
                 })
+                if(n.shape) node.shape = n.shape;
+                // console.log(node)
+                
                 if(Number(n.id)==287) console.log("coordinates of node 287: ( "+n.x+" , "+n.y+" ) ")
                 graph.addNode( n.id , node);
                 updateSearchLabels( n.id , n.label , n.type);
@@ -215,7 +218,6 @@ function getNeighs(sels,arr) {
     return Object.keys(neighDict);
 }//It returns an array not a dict!
 
-
 //Using bipartiteN2D or bipartiteD2N
 //This receives an array not a dict!
 function getNeighs2(sels,arr){ 
@@ -241,40 +243,6 @@ function getArrSubkeys(arr,id) {
     }
     return result;
 }
-
-function getCountries(){
-    var nodes = getVisibleNodes();
-    
-    var countries = {}
-    pr("in getCountries")
-    for(var i in nodes) {
-        theid = nodes[i].id;
-        // pr(i)
-        // pr(Nodes[theid])
-        // pr(theid+" : "+Nodes[theid].attr["CC"]+" , "+nodes[i].attr["ACR"])
-        if (Nodes[theid]["CC"]!="-")
-            countries[Nodes[theid]["CC"]]=1
-        // pr("")
-    }
-    return Object.keys(countries);
-}
-
-
-function getAcronyms() {
-    var nodes = getVisibleNodes();
-    var acrs = {}
-    pr("in getAcronyms")
-    for(var i in nodes) {
-        theid = nodes[i].id;
-        // pr(i)
-        // pr(nodes[i].id+" : "+nodes[i].attr["CC"]+" , "+nodes[i].attr["ACR"])
-        if (Nodes[theid]["ACR"]!="-")
-            acrs[Nodes[theid]["ACR"]]=1
-        // pr("")
-    }
-    return ( Object.keys(acrs) );
-}
-
 
 function clustersBy(daclass) {
 
@@ -324,8 +292,8 @@ function clustersBy(daclass) {
     //    [ Scaling node colours(0-255) and sizes(3-5) ]
     var Min_color = 0;
     var Max_color = 255;
-    var Min_size = 3;
-    var Max_size= 5;
+    var Min_size = 2;
+    var Max_size= 6;
     for(var i in NodeID_Val) {
 
         var newval_color = Math.round( ( Min_color+(NodeID_Val[i]["round"]-real_min)*((Max_color-Min_color)/(real_max-real_min)) ) );
@@ -360,82 +328,30 @@ function clustersBy(daclass) {
     }
     //    [ / Edge-colour by source-target nodes-colours combination ]
 
+    if(daclass!="degree")
+        set_ClustersLegend ( daclass )
+
     partialGraph.refresh();
     partialGraph.draw();
-
-
-
-
-
-
-
-        // Nodes[it].size =  desirableNodeSizeMIN+(parseInt(Nodes[it].size)-1) * ((desirableNodeSizeMAX-desirableNodeSizeMIN)/(maxNodeSize-minNodeSize));
-
-    // if (daclass=="country") {
-
-    //     CCs = getCountries()
-    //     CCxID = {}
-    //     for(var i in CCs) { 
-    //         code = CCs[i]
-    //         CCxID[code]=parseInt(i);
-    //     }
-    //     pr(CCxID)
-        
-    //     var nodes = getVisibleNodes();
-    //     for(var i in nodes) {
-    //         nodes[i].color = Nodes[ nodes[i].id ].color;            
-    //     }
-
-    //     colorList.sort(function(){ return Math.random()-0.5; }); 
-    //     // pr(colorList);
-    //     for(var i in nodes) {
-    //         cc = Nodes[nodes[i].id]["CC"]
-    //         if( !isUndef( cc ) && cc!="-" ) {
-    //             nodes[i].color = colorList[ CCxID[cc] ];
-    //         }
-    //     }
-    // }
-
-    // if (daclass=="acronym") {
-
-    //     CCs = getAcronyms()
-    //     CCxID = {}
-    //     for(var i in CCs) { 
-    //         code = CCs[i]
-    //         CCxID[code]=parseInt(i);
-    //     }
-    //     pr(CCxID)
-        
-    //     var nodes = getVisibleNodes();
-    //     for(var i in nodes) {
-    //         nodes[i].color = Nodes[ nodes[i].id ].color;            
-    //     }
-
-    //     colorList.sort(function(){ return Math.random()-0.5; }); 
-    //     // pr(colorList);
-    //     for(var i in nodes) {
-    //         cc = Nodes[nodes[i].id]["ACR"]
-    //         if( !isUndef( cc ) && cc!="-" ) {
-    //             nodes[i].color = colorList[ CCxID[cc] ];
-    //         }
-    //     }
-
-    // }
-
-
-    // if (daclass=="default") {
-    //     var nodes = getVisibleNodes();
-    //     for(var i in nodes) {
-    //         nodes[i].color = Nodes[ nodes[i].id ].color;            
-    //     }
-    // }
-
-    // partialGraph.refresh()
-    // partialGraph.draw();
 }
 
-
 function colorsBy(daclass) {
+    
+    pr("")
+    pr(" = = = = = = = = = = = = = = = = = ")
+    pr(" = = = = = = = = = = = = = = = = = ")
+    pr("colorsBy (    "+daclass+"    )")
+    pr(" = = = = = = = = = = = = = = = = = ")
+    pr(" = = = = = = = = = = = = = = = = = ")
+    pr("")
+
+    if(daclass=="clust_louvain") {
+        if(!partialGraph.states.slice(-1)[0].LouvainFait) {
+            RunLouvain()
+            partialGraph.states.slice(-1)[0].LouvainFait = true
+        }
+    }
+
     var v_nodes = getVisibleNodes();
     colorList.sort(function(){ return Math.random()-0.5; });
 
@@ -452,15 +368,17 @@ function colorsBy(daclass) {
         var e_id = v_edges[e].id;
         var a = v_edges[e].source.color;
         var b = v_edges[e].target.color;
-        a = hex2rga(a);
-        b = hex2rga(b);
-        var r = (a[0] + b[0]) >> 1;
-        var g = (a[1] + b[1]) >> 1;
-        var b = (a[2] + b[2]) >> 1;
-        partialGraph._core.graph.edgesIndex[e_id].color = "rgba("+[r,g,b].join(",")+",0.5)";
+        if (a && b) {
+            a = hex2rga(a);
+            b = hex2rga(b);
+            var r = (a[0] + b[0]) >> 1;
+            var g = (a[1] + b[1]) >> 1;
+            var b = (a[2] + b[2]) >> 1;
+            partialGraph._core.graph.edgesIndex[e_id].color = "rgba("+[r,g,b].join(",")+",0.5)";
+        }
     }
     //    [ / Edge-colour by source-target nodes-colours combination ]
-
+    set_ClustersLegend ( daclass )
     partialGraph.refresh();
     partialGraph.draw();
 }

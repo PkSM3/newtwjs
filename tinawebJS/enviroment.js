@@ -1,122 +1,6 @@
 
 
 //============================ < NEW BUTTONS > =============================//
-
-function changeType_old() {
-    pr("***swclickActual:"+swclickActual+" , swMacro:"+swMacro);
-    
-    if(swclickActual=="social") {
-        if(swMacro) {
-            changeToMacro("semantic");
-	        pushSWClick("semantic");
-	        RefreshState("B")
-        } else {
-            //From soc* to SocSem
-            if(is_empty(selections)) {
-                //soc to SocSem
-                changeToMacro("semantic");
-                pushSWClick("semantic");
-                RefreshState("B")
-
-            } else {
-                //soc* to SocSem
-                changeToMeso("sociosemantic");
-                pushSWClick("sociosemantic");
-                RefreshState("AaBb")
-            }
-        }
-        return;
-    }
-
-    if(swclickActual=="semantic") {
-        if(swMacro) {
-        	changeToMacro("social");
-	        pushSWClick("social");
-	        RefreshState("A");
-
-        } else {
-
-            if(is_empty(selections)) {
-                changeToMacro("social");
-                pushSWClick("social");
-                RefreshState("A");
-            } else {
-                changeToMeso("sociosemantic");
-                pushSWClick("sociosemantic");
-                RefreshState("AaBb");
-            }
-        }
-        return;
-    }
-
-    if(swclickActual=="sociosemantic") {
-
-    	if(swMacro) {
-    		changeToMacro("sociosemantic");
-	        pushSWClick("sociosemantic");
-	        RefreshState("AaBb")
-    	} else {
-
-            if(is_empty(selections)) {
-                changeToMacro(swclickPrev);
-                pushSWClick(swclickPrev);
-                RefreshState(PAST.toUpperCase())
-            } else {
-              //there is an active selection
-                //identify type of the current-selection
-                var countTypes = {};
-                for(var i in selections) {
-                    if( isUndef(countTypes[Nodes[i].type]) )
-                        countTypes[Nodes[i].type]=1;
-                    else
-                        countTypes[Nodes[i].type]++;
-                }
-                pr("bigraph #selectionsTypes: ")
-                pr(countTypes)
-
-
-                cpCountTypes = Object.keys(countTypes);
-                if(cpCountTypes.length==1) {
-
-                    if(cpCountTypes[0]==catSoc) {
-                        pushSWClick("social");
-                        changeToMeso("social");
-                        RefreshState("a");
-
-                    } else {
-                        pushSWClick("semantic");
-                        changeToMeso("semantic");
-                        RefreshState("b");
-                    }
-
-                } else {
-                  //there is a selection with both kind of nodes
-                    //Manually changing the selection, not using MultipleSelection
-                    var ndsids = [];
-                    for(var i in selections) {
-                        if( Nodes[i].type == catSoc )
-                            ndsids.push(i);
-                    }
-                    cancelSelection(false);
-                    for(var i in ndsids){
-                        nodeid = ndsids[i]
-                        getOpossitesNodes(nodeid,false); //false -> just nodeid
-                    }
-                    pushSWClick("social");
-                    changeToMeso("social");
-                    RefreshState("a");
-
-                }
-
-            }
-    	}
-
-        return;
-    }
-}
-
-
-
 function changeType() {
     var present = partialGraph.states.slice(-1)[0]; // Last
     var past = partialGraph.states.slice(-2)[0] // avant Last
@@ -148,10 +32,10 @@ function changeType() {
 
     if(!level && past!=false) {
         var sum_past = present.type.map(Number).reduce(function(a, b){return a+b;})
-        print("sum_past:")
-        print(sum_past)
-        print("past.type:")
-        print(past.type)
+        console.log("sum_past:")
+        console.log(sum_past)
+        console.log("past.type:")
+        console.log(past.type)
         if(sum_past>1) {
             nextState = past.type;
         }      
@@ -259,8 +143,8 @@ function changeType() {
 
     if(sels.length>0) { // and if there's some selection:
 
-        print("active selection 01:")
-        print(sels)
+        console.log("active selection 01:")
+        console.log(sels)
 
         // Defining the new selection (if it's necessary)
         var sumCats = type_t0.map(Number).reduce(function(a, b){return a+b;})
@@ -298,8 +182,8 @@ function changeType() {
             // output: newsels=[opposite-neighs]
         } // [ / ChangeType: incremental selection ]
 
-        print("new virtually selected nodes:")
-        print(sels)
+        console.log("new virtually selected nodes:")
+        console.log(sels)
         var selDict={}
         for(var i in sels) // useful for case: (sumNextState==2)
             selDict[sels[i]]=true
@@ -353,6 +237,7 @@ function changeType() {
     }
 
     partialGraph.states[avantlastpos] = {};
+    partialGraph.states[avantlastpos].LouvainFait = false;
     partialGraph.states[avantlastpos].level = present.level;
     partialGraph.states[avantlastpos].selections = selsbackup;
     partialGraph.states[avantlastpos].type = present.type; 
@@ -410,6 +295,7 @@ function changeLevel() {
 
     partialGraph.emptyGraph();
 
+    var voisinage = {}
     // Dictionaries of: selection+neighbors
     var nodes_2_colour = {}
     var edges_2_colour = {}
@@ -422,6 +308,8 @@ function changeLevel() {
                 nodes_2_colour[t]=false;
                 edges_2_colour[s+";"+t]=true;
                 edges_2_colour[t+";"+s]=true;
+                if( !selections[t]  ) 
+                    voisinage[ Number(t) ] = true;
             }
         }
     }
@@ -437,6 +325,19 @@ function changeLevel() {
             add1Elem(i)
         for(var i in edges_2_colour)
             add1Elem(i)
+
+        // Adding intra-neighbors edges O(voisinage²)
+        voisinage = Object.keys(voisinage)
+        for(var i=0;i<voisinage.length;i++) {
+            for(var j=1;j<voisinage.length;j++) {
+                if( voisinage[i]!=voisinage[j] ) {
+                    // console.log( "\t" + voisinage[i] + " vs " + voisinage[j] )
+                    add1Elem( voisinage[i]+";"+voisinage[j] )
+                }
+                
+            }
+        }
+        
         futurelevel = false;
     } else { // [Change to Global] when level=Local(0)
         for(var n in Nodes) {
@@ -449,6 +350,10 @@ function changeLevel() {
         }
         futurelevel = true;
     }
+
+
+
+
     // Nodes Selection now:
     if(sels.length>0) {
         var SelInst = new SelectionEngine();
@@ -478,52 +383,11 @@ function changeLevel() {
 
     fa2enabled=true; partialGraph.zoomTo(partialGraph._core.width / 2, partialGraph._core.height / 2, 0.8).draw().startForceAtlas2();
 }
-
-function changeLevel_old() {
-    bf=swclickActual
-    pushSWClick(swclickActual);
-    pr("swMacro: "+swMacro+" - [swclickPrev: "+bf+"] - [swclickActual: "+swclickActual+"]")
-
-    if(swMacro){
-        // Macro Level  --  swMacro:true
-	    if(swclickActual=="social") {
-	    	changeToMeso("social")
-	    	RefreshState("a");
-	    }
-	    if(swclickActual=="semantic") {
-	    	changeToMeso("semantic")
-	    	RefreshState("b");
-	    }
-	    swMacro=false;
-        return;
-
-	} else {
-        // Meso Level  --  swMacro:false
-	    if(swclickActual=="social") {
-	    	changeToMacro("social")
-	    	RefreshState("A")
-	    }
-	    if(swclickActual=="semantic") {
-	    	changeToMacro("semantic")
-	    	RefreshState("B")
-	    }
-	    swMacro=true;
-        return;
-	}
-}
-
-
 //============================= </ NEW BUTTONS > =============================//
 
 
 
-
-
-
-
 //=========================== < FILTERS-SLIDERS > ===========================//
-
-
 //    Execution modes:
 //	EdgeWeightFilter("#sliderAEdgeWeight", "label" , "nodes1", "weight");
 //	EdgeWeightFilter("#sliderBEdgeWeight", "label" , "nodes2", "weight");
@@ -690,14 +554,11 @@ function EdgeWeightFilter(sliderDivID , type_attrb , type ,  criteria) {
                         }
                     }
 
-                    // if (!is_empty(selections))
-                    //     DrawAsSelectedNodes(selections)
-
                     partialGraph.refresh()
                     partialGraph.draw()
 
-                    // print("\t\tedgesfilter:")
-                    // print("\t\t[ Starting FA2 ]")
+                    // console.log("\t\tedgesfilter:")
+                    // console.log("\t\t[ Starting FA2 ]")
                     // [ Starting FA2 ]
                     $.doTimeout(10,function(){
                         fa2enabled=true; partialGraph.startForceAtlas2();
@@ -713,11 +574,8 @@ function EdgeWeightFilter(sliderDivID , type_attrb , type ,  criteria) {
             }
             
         }
-    });
-    
+    });    
 }
-
-
 
 //   Execution modes:
 // NodeWeightFilter ( "#sliderANodeWeight" ,  "Document" , "type" , "size") 
@@ -814,9 +672,6 @@ function NodeWeightFilter( categories ,  sliderDivID , type_attrb , type ,  crit
                 }
                 pushFilterValue(sliderDivID,filtervalue)
 
-                // if (!is_empty(selections))
-                //     DrawAsSelectedNodes(selections)
-
                 partialGraph.refresh()
                 partialGraph.draw()
 
@@ -832,7 +687,6 @@ function NodeWeightFilter( categories ,  sliderDivID , type_attrb , type ,  crit
             
         }
     });
-
 }
 
 function getGraphElement(elem) {
@@ -863,7 +717,7 @@ function AlgorithmForSliders( elements , type_attrb , type , criteria) {
     if(elems.length==0)  return {"steps":0 , "finalarray":[]};
 
     // identifying if you received nodes or edges
-    var edgeflag = (elems.slice(-1)[0].id.split(";").length>1)? true : false;
+    var edgeflag = ( !isNaN(elems.slice(-1)[0].id) || elems.slice(-1)[0].id.split(";").length>1)? true : false;
     // //  ( 2 )
     // // extract [ "edgeID" : edgeWEIGHT ] | [ "nodeID" : nodeSIZE ] 
     // // and save this into edges_weight | nodes_size
@@ -934,7 +788,6 @@ function AlgorithmForSliders( elements , type_attrb , type , criteria) {
     // pr("finalarray: ")
     return {"steps":finalarray.length,"finalarray":finalarray}
 }
-
 //=========================== </ FILTERS-SLIDERS > ===========================//
 
 
